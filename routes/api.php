@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -19,4 +20,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/products', ProductController::class);
     Route::apiResource('/cart', CartController::class);
     Route::apiResource('cart-items', CartItemController::class);
+    Route::apiResource('orders', OrderController::class);
+    Route::patch('orders/{order}/order-status', [OrderController::class,'order_status']);
+    Route::patch('orders/{order}/payment-status', [OrderController::class,'payment_status']);
 });

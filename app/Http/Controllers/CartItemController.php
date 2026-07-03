@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CartItem;
+use App\Models\Product;
 use Illuminate\Http\Request;
 
 class CartItemController extends Controller
@@ -43,8 +44,7 @@ class CartItemController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, CartItem $cartItem)
-    {
-
+    {        
         if ($cartItem->cart->user_id !== auth()->id()) {
             return response()->json([
                 'message' => 'Unauthorized'
@@ -55,12 +55,21 @@ class CartItemController extends Controller
             'quantity' => 'required|integer|min:1'
         ]);
 
-        $cartItem->quantity = $request->quantity;
-        $cartItem->save();
+        $product = Product::findOrFail($cartItem->product_id);
+        
+        if ($request->quantity > $product->stock) {
+            return response()->json([
+                'message' => 'Requested quantity exceeds available stock.'
+            ], 400);
+        }
+        
+        $cartItem->update([
+            'quantity' => $request->quantity
+        ]);
 
         return response()->json([
-            'message' => 'Cart updated successfully',
-            'cart_item' => $cartItem
+            'message' => 'Cart item updated successfully',
+            'cart_item' => $cartItem->fresh()
         ]);
     }
 

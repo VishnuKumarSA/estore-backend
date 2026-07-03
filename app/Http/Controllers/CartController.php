@@ -35,6 +35,18 @@ class CartController extends Controller
 
         $product = Product::findOrFail($request->product_id);
 
+        if ($request->quantity <= 0) {
+            return response()->json([
+                'message' => 'Quantity must be greater than 0.'
+            ], 400);
+        }
+
+        if ($product->stock < $request->quantity) {
+            return response()->json([
+                'message' => 'Requested quantity exceeds available stock'
+            ], 400);
+        }
+
         $cart = Cart::firstOrCreate(
             [
                 'user_id' => $user_id,
@@ -46,6 +58,16 @@ class CartController extends Controller
             ->where('product_id', $product->id)
             ->first();
 
+        $currentQty = $cartItem ? $cartItem->quantity : 0;
+
+        $totalQty = $currentQty + $request->quantity;
+
+        if ($totalQty > $product->quantity) {
+            return response()->json([
+                'message' => 'Requested quantity exceeds available stock.'
+            ], 400);
+        }
+
         if ($cartItem) {
             $cartItem->quantity += $request->quantity;
             $cartItem->save();
@@ -53,12 +75,10 @@ class CartController extends Controller
             CartItem::create([
                 'cart_id' => $cart->id,
                 'product_id' => $product->id,
-                'quantity' => $request->quantity,
+                'quantity' => $totalQty,
                 'price' => $product->price
             ]);
         }
-
-
 
         return response()->json([
             'message' => 'Cart added successfully'
@@ -92,6 +112,6 @@ class CartController extends Controller
      */
     public function destroy(Cart $cart)
     {
-        
+
     }
 }
