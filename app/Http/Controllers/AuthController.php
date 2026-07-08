@@ -25,7 +25,7 @@ class AuthController extends Controller
 
         $User->save();
 
-        return response()->json(['message' => 'User registered successfully', 'user' => $User], 201);
+        return response()->json(['status'=>201,'message' => 'User registered successfully', 'user' => $User], 201);
     }
 
     public function login(Request $request)
@@ -37,7 +37,7 @@ class AuthController extends Controller
         ]);
 
         if (!Auth::attempt($credentials)) {
-            $msg = array('message' => 'invalid email or password');
+            $msg = array('status'=>401, 'message' => 'invalid email or password');
             return response()->json($msg, 401);
         }
 
