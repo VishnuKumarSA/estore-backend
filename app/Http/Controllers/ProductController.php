@@ -99,8 +99,13 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Product $product)
+    public function show($id, $slug)
     {
+        $product = Product::findOrFail($id);
+        
+        if ($product->slug !== $slug) {
+            abort(404);
+        }
         return response()->json($product);
     }
     /**
