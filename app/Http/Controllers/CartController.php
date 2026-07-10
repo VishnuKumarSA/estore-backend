@@ -62,7 +62,7 @@ class CartController extends Controller
 
         $totalQty = $currentQty + $request->quantity;
 
-        if ($totalQty > $product->quantity) {
+        if ($totalQty > $product->stock) {
             return response()->json([
                 'message' => 'Requested quantity exceeds available stock.'
             ], 400);
@@ -80,8 +80,11 @@ class CartController extends Controller
             ]);
         }
 
+        $cartItemCount = Cart::where('id', $cart->id)->count();
+
         return response()->json([
-            'message' => 'Cart added successfully'
+            'message' => 'Cart added successfully',
+            'cartItemCount' => $cartItemCount
         ], 201);
 
     }
@@ -113,5 +116,15 @@ class CartController extends Controller
     public function destroy(Cart $cart)
     {
 
+    }
+
+    public function getCartCount()
+    {
+        $user_id = auth()->id();
+        $cartItemCount = Cart::where('user_id', $user_id)->where('status', 'active')->count();
+        return response()->json([
+            'message' => 'Cart count fetched',
+            'cartItemCount' => $cartItemCount
+        ], 200);
     }
 }

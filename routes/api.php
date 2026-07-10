@@ -20,6 +20,7 @@ Route::get('/products/{id}/{slug}', [ProductController::class,'show']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::apiResource('/cart', CartController::class);
+    Route::get('/cart-count', [CartController::class,'getCartCount']);
     Route::apiResource('cart-items', CartItemController::class);
     Route::apiResource('orders', OrderController::class);
     Route::patch('orders/{order}/order-status', [OrderController::class, 'order_status']);
