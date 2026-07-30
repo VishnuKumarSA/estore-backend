@@ -18,7 +18,28 @@ class CartController extends Controller
             ->where('user_id', auth()->id())
             ->where('status', 'active')
             ->first();
-        return response()->json(['message' => 'cart deteils fetched', 'cart' => $cart], 200);
+
+        if (!$cart) {
+            return response()->json([
+                'message' => 'Cart is empty',
+                'cart' => null,
+                'subtotal' => 0,
+                'total' => 0,
+            ]);
+        }
+
+        $subtotal = $cart->cartItems->sum(function ($item) {
+            return $item->quantity * $item->price;
+        });
+
+        $total = $subtotal; // Shipping, tax, discount later add pannalam
+
+        return response()->json([
+            'message' => 'Cart details fetched',
+            'cart' => $cart,
+            'subtotal' => $subtotal,
+            'total' => $total,
+        ]);
     }
 
     /**
@@ -121,7 +142,10 @@ class CartController extends Controller
     public function getCartCount()
     {
         $user_id = auth()->id();
-        $cartItemCount = Cart::where('user_id', $user_id)->where('status', 'active')->count();
+        $cartItemCount = CartItem::whereHas('cart', function ($query) use ($user_id) {
+            $query->where('user_id', $user_id)
+                ->where('status', 'active');
+        })->count();
         return response()->json([
             'message' => 'Cart count fetched',
             'cartItemCount' => $cartItemCount
