@@ -12,18 +12,48 @@ return new class extends Migration {
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+
             $table->string('order_number')->unique();
-            $table->decimal('total_amount', 10, 2);
-            $table->decimal('tax', 10, 2)->default(0);
-            $table->decimal('shipping_charge', 10, 2)->default(0);
+
+            // Customer Details
+            $table->string('first_name');
+            $table->string('last_name')->nullable();
+            $table->string('email');
+            $table->string('mobile_number', 20);
+
+            // Delivery Address
+            $table->text('address');
+            $table->string('city');
+            $table->string('state');
+            $table->string('postal_code', 15);
+
+            // Amount Details
+            $table->decimal('subtotal', 10, 2);
             $table->decimal('discount', 10, 2)->default(0);
+            $table->decimal('shipping_charge', 10, 2)->default(0);
+            $table->decimal('tax', 10, 2)->default(0);
             $table->decimal('grand_total', 10, 2);
-            $table->enum('payment_method', ['COD', 'UPI', 'Card']);
-            $table->enum('payment_status', ['Pending', 'Paid', 'Failed'])->default('Pending');
-            $table->enum('order_status', ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'])->default('Pending');
-            $table->text('shipping_address');
-            $table->text('billing_address');
+
+            // Payment
+            $table->enum('payment_method', ['COD', 'UPI']);
+            $table->enum('payment_status', [
+                'Pending',
+                'Paid',
+                'Failed'
+            ])->default('Pending');
+
+            // Order Status
+            $table->enum('order_status', [
+                'Pending',
+                'Confirmed',
+                'Processing',
+                'Shipped',
+                'Delivered',
+                'Cancelled'
+            ])->default('Pending');
+
             $table->timestamps();
         });
     }

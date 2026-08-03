@@ -44,32 +44,38 @@ class CartItemController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, CartItem $cartItem)
-    {        
+    {
         if ($cartItem->cart->user_id !== auth()->id()) {
             return response()->json([
                 'message' => 'Unauthorized'
             ], 403);
         }
-        
+
         $request->validate([
             'quantity' => 'required|integer|min:1'
         ]);
 
         $product = Product::findOrFail($cartItem->product_id);
-        
+
         if ($request->quantity > $product->stock) {
             return response()->json([
                 'message' => 'Requested quantity exceeds available stock.'
             ], 400);
         }
-        
+
         $cartItem->update([
             'quantity' => $request->quantity
         ]);
 
+        $cart = $cartItem->cart->load('cartItems.product');
+        $subtotal = $cart->cartItems->sum(fn($item) => $item->product->price * $item->quantity);
+        $total = $subtotal;
+
         return response()->json([
             'message' => 'Cart item updated successfully',
-            'cart_item' => $cartItem->fresh()
+            'cart_item' => $cartItem->fresh(),
+            'subtotal' => $subtotal,
+            'total' => $total
         ]);
     }
 
@@ -83,11 +89,17 @@ class CartItemController extends Controller
                 'message' => 'Unauthorized'
             ], 403);
         }
-
+        $cart = $cartItem->cart;
         $cartItem->delete();
 
+        $cart->load('cartItems.product');
+        $subtotal = $cart->cartItems->sum(fn($item) => $item->price * $item->quantity);
+        $total = $subtotal;
+
         return response()->json([
-            'message' => 'Cart item deleted successfully'
+            'message' => 'Cart item deleted successfully',
+            'subtotal' => $subtotal,
+            'total' => $total,
         ], 200);
     }
 }

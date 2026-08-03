@@ -9,7 +9,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use DB;
 use Illuminate\Http\Request;
-
+use App\Models\Payment;
 class OrderController extends Controller
 {
     /**
@@ -28,9 +28,18 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'payment_method' => 'required|string',
-            'shipping_address' => 'required|string',
-            'billing_address' => 'required|string',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'email' => 'required|email',
+            'mobile_number' => 'required|string|max:20',
+            'address' => 'required|string',
+            'city' => 'required|string|max:255',
+            'state' => 'required|string|max:255',
+            'postal_code' => 'required|string|max:15',
+            'payment_method' => 'required|in:COD,UPI',
+            'razorpay_order_id' => 'nullable|string',
+            'razorpay_payment_id' => 'nullable|string',
+            'razorpay_signature' => 'nullable|string',
         ]);
 
         $user_id = auth()->id();
@@ -63,13 +72,14 @@ class OrderController extends Controller
             }
         }
 
-        $total_amount = $cartItems->sum(function ($item) {
+        $subtotal = $cartItems->sum(function ($item) {
             return $item->price * $item->quantity;
         });
         $tax = 0;
         $shipping_charge = 0;
         $discount = 0;
-        $grand_total = $total_amount + $tax + $shipping_charge - $discount;
+
+        $grand_total = $subtotal + $tax + $shipping_charge - $discount;
 
         DB::beginTransaction();
 
@@ -78,17 +88,51 @@ class OrderController extends Controller
             $order = Order::create([
                 'user_id' => $user_id,
                 'order_number' => $orderNumber,
-                'total_amount' => $total_amount,
-                'tax' => $tax,
-                'shipping_charge' => $shipping_charge,
+
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'email' => $request->email,
+                'mobile_number' => $request->mobile_number,
+
+                'address' => $request->address,
+                'city' => $request->city,
+                'state' => $request->state,
+                'postal_code' => $request->postal_code,
+
+                'subtotal' => $subtotal,
                 'discount' => $discount,
+                'shipping_charge' => $shipping_charge,
+                'tax' => $tax,
                 'grand_total' => $grand_total,
+
                 'payment_method' => $request->payment_method,
-                'payment_status' => 'Pending',
-                'order_status' => 'Pending',
-                'shipping_address' => $request->shipping_address,
-                'billing_address' => $request->billing_address
+
+                'payment_status' => $request->payment_method == "UPI"
+                    ? "Paid"
+                    : "Pending",
+
+                'order_status' => "Pending",
             ]);
+
+            if ($request->payment_method == "UPI") {
+
+                Payment::create([
+
+                    'order_id' => $order->id,
+
+                    'razorpay_order_id' => $request->razorpay_order_id,
+
+                    'razorpay_payment_id' => $request->razorpay_payment_id,
+
+                    'razorpay_signature' => $request->razorpay_signature,
+
+                    'amount' => $grand_total,
+
+                    'status' => 'Success'
+
+                ]);
+
+            }
 
             foreach ($cartItems as $item) {
                 $sub_total = $item->price * $item->quantity;
