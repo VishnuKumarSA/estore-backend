@@ -10,6 +10,7 @@ use App\Models\Product;
 use DB;
 use Illuminate\Http\Request;
 use App\Models\Payment;
+use Razorpay\Api\Api;
 class OrderController extends Controller
 {
     /**
@@ -27,6 +28,10 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
+        $api = new Api(
+            config('services.razorpay.key'),
+            config('services.razorpay.secret')
+        );
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'nullable|string|max:255',
@@ -107,31 +112,54 @@ class OrderController extends Controller
 
                 'payment_method' => $request->payment_method,
 
-                'payment_status' => $request->payment_method == "UPI"
-                    ? "Paid"
-                    : "Pending",
+                'payment_status' => "Pending",
 
                 'order_status' => "Pending",
             ]);
 
             if ($request->payment_method == "UPI") {
 
-                Payment::create([
-
-                    'order_id' => $order->id,
-
+                $attributes = [
                     'razorpay_order_id' => $request->razorpay_order_id,
-
                     'razorpay_payment_id' => $request->razorpay_payment_id,
-
                     'razorpay_signature' => $request->razorpay_signature,
+                ];
 
-                    'amount' => $grand_total,
+                // Verify Razorpay Signature
+                $api->utility->verifyPaymentSignature($attributes);
 
-                    'status' => 'Success'
+                // Fetch Payment Details
+                $payment = $api->payment->fetch($request->razorpay_payment_id);
 
+                // Payment must be captured
+                if ($payment->status !== 'captured') {
+                    throw new \Exception('Payment not captured.');
+                }
+
+                // Verify Amount
+                if ((int) $payment->amount !== ($grand_total * 100)) {
+                    throw new \Exception('Payment amount mismatch.');
+                }
+
+                // Verify Order ID
+                if ($payment->order_id !== $request->razorpay_order_id) {
+                    throw new \Exception('Invalid Razorpay Order ID.');
+                }
+
+                // Update Order Payment Status
+                $order->update([
+                    'payment_status' => 'Paid'
                 ]);
 
+                // Save Payment Record
+                Payment::create([
+                    'order_id' => $order->id,
+                    'razorpay_order_id' => $request->razorpay_order_id,
+                    'razorpay_payment_id' => $request->razorpay_payment_id,
+                    'razorpay_signature' => $request->razorpay_signature,
+                    'amount' => $grand_total,
+                    'status' => $payment->status,
+                ]);
             }
 
             foreach ($cartItems as $item) {

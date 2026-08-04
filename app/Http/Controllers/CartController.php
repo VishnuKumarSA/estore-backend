@@ -121,23 +121,7 @@ class CartController extends Controller
             ], 403);
         }
         return response()->json($cart);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Cart $cart)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Cart $cart)
-    {
-
-    }
+    }   
 
     public function getCartCount()
     {

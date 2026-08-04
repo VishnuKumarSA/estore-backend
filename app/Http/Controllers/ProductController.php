@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Storage;
 use Str;
 
 class ProductController extends Controller
@@ -102,7 +103,7 @@ class ProductController extends Controller
     public function show($id, $slug)
     {
         $product = Product::findOrFail($id);
-        
+
         if ($product->slug !== $slug) {
             abort(404);
         }
@@ -121,10 +122,18 @@ class ProductController extends Controller
             'sku' => ['required', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($product->id)],
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048'
+            'image' => 'sometimes|image|mimes:jpg,jpeg,png,webp|max:2048'
         ]);
 
-        $imagePath = $request->file('image')->store('products', 'public');
+        if ($request->hasFile('image')) {
+
+            // Delete old image
+            if ($product->image && Storage::disk('public')->exists($product->image)) {
+                Storage::disk('public')->delete($product->image);
+            }
+
+            $product->image = $request->file('image')->store('products', 'public');
+        }
 
         $product->category_id = $request->category_id;
         $product->name = $request->name;
@@ -133,11 +142,13 @@ class ProductController extends Controller
         $product->sku = $request->sku;
         $product->price = $request->price;
         $product->stock = $request->stock;
-        $product->image = $imagePath;
 
         $product->save();
 
-        return response()->json(['message' => 'Product update Sucessfully'], 200);
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'product' => $product
+        ], 200);
     }
 
     /**
