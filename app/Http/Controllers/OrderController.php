@@ -136,9 +136,13 @@ class OrderController extends Controller
                     throw new \Exception('Payment not captured.');
                 }
 
-                // Verify Amount
-                if ((int) $payment->amount !== ($grand_total * 100)) {
-                    throw new \Exception('Payment amount mismatch.');
+                $expected = (int) round($grand_total * 100);
+                $received = (int) $payment->amount;
+
+                if ($received !== $expected) {
+                    throw new \Exception(
+                        "Payment amount mismatch. Expected: {$expected}, Received: {$received}"
+                    );
                 }
 
                 // Verify Order ID

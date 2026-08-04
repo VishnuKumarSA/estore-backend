@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CartItemController;
@@ -23,7 +23,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::apiResource('products', ProductController::class)
         ->except(['index', 'show']);
 
-    Route::apiResource('category', CategoryController::class)
+    Route::apiResource('categories', CategoryController::class)
         ->except(['index', 'show']);
 
     Route::patch('orders/{order}/order-status', [OrderController::class, 'order_status']);
