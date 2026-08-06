@@ -19,7 +19,13 @@ class OrderController extends Controller
     public function index()
     {
         $user_id = auth()->id();
-        $allOrder = Order::where('user_id', $user_id)->get();
+        $allOrder = Order::with('orderItems.product')
+            ->where('user_id', $user_id)
+            ->get()
+            ->map(function ($order) {
+                $order->ordered_date = $order->created_at->format('d M Y');
+                return $order;
+            });
         return response()->json(['message' => 'Order list fetched successfully', 'order' => $allOrder], 200);
     }
 

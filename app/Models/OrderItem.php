@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Product;
 class OrderItem extends Model
 {
     protected $fillable = [
@@ -11,6 +12,12 @@ class OrderItem extends Model
         "product_id",
         "quantity",
         "price",
-        "subtotal"        
+        "subtotal"
     ];
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+    
 }

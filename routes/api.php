@@ -25,10 +25,6 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     Route::apiResource('categories', CategoryController::class)
         ->except(['index', 'show']);
-
-    Route::patch('orders/{order}/order-status', [OrderController::class, 'order_status']);
-
-    Route::patch('orders/{order}/payment-status', [OrderController::class, 'payment_status']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -36,7 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return response()->json($request->user());
     });
-    
+
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::apiResource('cart', CartController::class)
@@ -48,4 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('payment/create-order', [PaymentController::class, 'createOrder']);
     Route::post('payment/verify', [PaymentController::class, 'verify']);
+
+    Route::patch('orders/{order}/order-status', [OrderController::class, 'order_status']);
+
+    Route::patch('orders/{order}/payment-status', [OrderController::class, 'payment_status']);
 });
